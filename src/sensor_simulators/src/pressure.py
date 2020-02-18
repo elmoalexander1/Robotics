@@ -3,6 +3,7 @@ import rospy
 import time
 from geometry_msgs.msg import PoseStamped
 from std_msgs.msg import Float64
+from sensor_simulators.srv import calibrate, calibrateResponse
 import random
 
 # Create a class which saves the altitude of the drone and esimates the pressure
@@ -10,10 +11,12 @@ class PressureSensor():
 
   # Node initialization
   def __init__(self):
-
     # Sleep to allow simulation to start
     time.sleep(1)
 
+    # Adding the service after the node initialization
+    self.service = rospy.Service('calibrate_pressure', calibrate, self.CalibrateFunction)
+    
     # Create the publisher and subscriber
     self.pressure_pub = rospy.Publisher('/uav/sensors/pressure', Float64, queue_size=1)
     self.position_sub = rospy.Subscriber('/uav/sensors/gps', PoseStamped, self.getPosition, queue_size = 1)
@@ -29,6 +32,17 @@ class PressureSensor():
 
     # Call the mainloop of our class
     self.mainloop()
+
+
+  # Saves the baseline value
+  def CalibrateFunction(self, request):
+    # If we want to calibrate
+    if request.zero == True:
+      self.baseline_value = self.pressure
+    else:
+      self.baseline_value = 0
+    # Return the new baseline value
+    return calibrateResponse(self.baseline_value)
 
 
   # Callback for the keyboard manager
